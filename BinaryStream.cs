@@ -7,6 +7,8 @@ public class BinaryStream : MemoryStream {
 
     public bool Reverse => Endian != Native;
 
+    public Encoding Encoding { get; set; } = Encoding.UTF8;
+
     public BinaryStream() : base() {}
 
     public BinaryStream(int capacity) : base(capacity) {}
@@ -47,7 +49,7 @@ public class BinaryStream : MemoryStream {
     public string ReadString(int len, Encoding? enc = null) {
         byte[] data = new byte[len];
         Read(data);
-        enc ??= Encoding.UTF8;
+        enc ??= Encoding;
         return enc.GetString(data);
     }
 
@@ -55,7 +57,7 @@ public class BinaryStream : MemoryStream {
         List<byte> bytes = new(sbyte.MaxValue);
         for (byte b = (byte)ReadByte(); b != 0; b = (byte)ReadByte())
             bytes.Add(b);
-        enc ??= Encoding.UTF8;
+        enc ??= Encoding;
         return enc.GetString(bytes.ToArray());
     }
 
@@ -64,7 +66,7 @@ public class BinaryStream : MemoryStream {
     }
 
     public void WriteString(string value, Encoding? enc = null) {
-        enc ??= Encoding.UTF8;
+        enc ??= Encoding;
         Write(enc.GetBytes(value));
     }
 
