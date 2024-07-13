@@ -34,16 +34,25 @@ public class BinaryStream : MemoryStream {
         return Unsafe.ReadUnaligned<T>(ref bytes[0]);
     }
 
-    public void ReadUnmanaged<T>(ref T value) where T : unmanaged {
+    public BinaryStream ReadUnmanaged<T>(ref T value) where T : unmanaged {
         value = ReadUnmanaged<T>();
+        return this;
     }
 
-    public void WriteUnmanaged<T>(T value) where T : unmanaged {
+    public BinaryStream WriteUnmanaged<T>(T value) where T : unmanaged {
         Span<byte> bytes = new byte[Unsafe.SizeOf<T>()];
         Unsafe.WriteUnaligned(ref bytes[0], value);
         if (Reverse && bytes.Length > 1)
             bytes.Reverse();
         Write(bytes);
+        return this;
+    }
+
+    public BinaryStream WriteUnmanaged<T>(params T[] values) where T : unmanaged
+    {
+        foreach (var value in values)
+            WriteUnmanaged(value);
+        return this;
     }
 
     public string ReadString(int len, Encoding? enc = null) {
@@ -65,18 +74,22 @@ public class BinaryStream : MemoryStream {
         return this.SeekTask(pos, (x) => x.ReadNTString(enc));
     }
 
-    public void WriteString(string value, Encoding? enc = null) {
+    public BinaryStream WriteString(string value, Encoding? enc = null) {
         enc ??= Encoding;
         Write(enc.GetBytes(value));
+        return this;
     }
 
-    public void WriteNTString(string value, Encoding? enc = null) {
+    public BinaryStream WriteNTString(string value, Encoding? enc = null) {
         WriteString(value, enc);
         WriteByte(0);
+        return this;
     }
 
-    public void WriteNTStrings(Encoding? enc, params string[] values) {
-        foreach (var s in values) WriteNTString(s, enc);
+    public BinaryStream WriteNTStrings(Encoding? enc, params string[] values) {
+        foreach (var s in values) 
+            WriteNTString(s, enc);
+        return this;
     }
 
     public T ReadItem<T>() where T : IRead, new() {
@@ -85,19 +98,13 @@ public class BinaryStream : MemoryStream {
         return res;
     }
 
-    public void ReadItem<T>(ref T item) where T : IRead {
+    public BinaryStream ReadItem<T>(ref T item) where T : IRead {
         item.Read(this);
+        return this;
     }
 
-    public void WriteItem<T>(T item) where T : IWrite {
+    public BinaryStream WriteItem<T>(T item) where T : IWrite {
         item.Write(this);
-    }
-
-    public void WriteUnmanaged(params ValueType[] values) {
-        foreach (var value in values) {
-            if (!value.GetType().IsUnmanaged())
-                continue;
-            Globals.WriteValueType(this, value);
-        }
+        return this;
     }
 }

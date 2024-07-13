@@ -6,7 +6,7 @@ public static class Yaz0 {
     public static byte[] Decompress(ReadOnlySpan<byte> data)
 	{
 		if (data[0] != 'Y' || data[1] != 'a' || data[2] != 'z' || data[3] != '0')
-			return [];
+			return [.. data];
 
 		int fullsize = (data[4] << 24) | (data[5] << 16) | (data[6] << 8) | data[7];
 		byte[] output = new byte[fullsize];
