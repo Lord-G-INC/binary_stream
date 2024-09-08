@@ -1,6 +1,6 @@
 .vs/
-BinaryStream/bin/
-BinaryStream/dbg/
-BinaryStream/obj/
+bin/
+dbg/
+obj/
 
 *.old
