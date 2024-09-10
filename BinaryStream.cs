@@ -190,9 +190,9 @@ public class BinaryStream : MemoryStream {
     }
 
     /// <summary>
-    /// Skips a number of bytes relative to the current position
+    /// Skips a number of bytes from the current position
     /// </summary>
-    public BinaryStream Skip(int count) {
+    public BinaryStream Skip(long count) {
         Seek(count, SeekOrigin.Current);
         return this;
     }
