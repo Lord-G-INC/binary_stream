@@ -61,7 +61,7 @@ public class BinaryStream : MemoryStream {
     }
 
     /// <summary>
-    /// Reads an unmanaged type
+    /// Reads to a variable with an unmanaged type
     /// </summary>
     public BinaryStream ReadUnmanaged<T>(ref T value) where T : unmanaged {
         value = ReadUnmanaged<T>();
@@ -69,7 +69,7 @@ public class BinaryStream : MemoryStream {
     }
 
     /// <summary>
-    /// Writes an unmanaged type with the proper endianness
+    /// Writes an unmanaged type
     /// </summary>
     public BinaryStream WriteUnmanaged<T>(T value) where T : unmanaged {
         Span<byte> bytes = new byte[Unsafe.SizeOf<T>()];
@@ -165,7 +165,27 @@ public class BinaryStream : MemoryStream {
     }
 
     /// <summary>
-    /// Reads to a variable that implements IRead
+    /// Reads a number of bytes from the current position
+    /// </summary>
+    public byte[] ReadBytes(int count) {
+        if (count < 0) {
+            throw new ArgumentOutOfRangeException(nameof(count), "Byte count cannot be negative.");
+        }
+
+        long bytesToEnd = Length - Position;
+        if (count > bytesToEnd) {
+            throw new ArgumentOutOfRangeException(nameof(count), $"Byte count overflow, attempted to read {count} bytes with only {bytesToEnd} available.");
+        }
+
+        byte[] buffer = new byte[count];
+
+        Read(buffer, 0, count);
+
+        return buffer;
+    }
+
+    /// <summary>
+    /// Reads a type that implements IRead
     /// </summary>
     public T ReadItem<T>() where T : IRead, new() {
         T res = new();
@@ -174,7 +194,7 @@ public class BinaryStream : MemoryStream {
     }
 
     /// <summary>
-    /// Reads a variable that implements IRead
+    /// Reads to a variable that implements IRead
     /// </summary>
     public BinaryStream ReadItem<T>(ref T item) where T : IRead {
         item.Read(this);
@@ -182,7 +202,7 @@ public class BinaryStream : MemoryStream {
     }
 
     /// <summary>
-    /// Reads a variable that implements IRead
+    /// Writes a variable that implements IRead
     /// </summary>
     public BinaryStream WriteItem<T>(T item) where T : IWrite {
         item.Write(this);
