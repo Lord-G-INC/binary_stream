@@ -224,4 +224,22 @@ public class BinaryStream : MemoryStream {
         Seek(count, SeekOrigin.Current);
         return this;
     }
+
+    public sbyte ReadInt8() { return ReadUnmanaged<sbyte>(); }
+    public byte ReadUInt8() { return ReadUnmanaged<byte>(); }
+    public short ReadInt16() { return ReadUnmanaged<short>(); }
+    public ushort ReadUInt16() { return ReadUnmanaged<ushort>(); }
+    public int ReadInt32() { return ReadUnmanaged<int>(); }
+    public uint ReadUInt32() { return ReadUnmanaged<uint>(); }
+    public long ReadInt64() { return ReadUnmanaged<long>(); }
+    public ulong ReadUInt64() { return ReadUnmanaged<ulong>(); }
+
+    public void WriteInt8(sbyte value) { WriteUnmanaged(value); }
+    public void WriteUInt8(byte value) { WriteUnmanaged(value); }
+    public void WriteInt16(short value) { WriteUnmanaged(value); }
+    public void WriteUInt16(ushort value) { WriteUnmanaged(value); }
+    public void WriteInt32(int value) { WriteUnmanaged(value); }
+    public void WriteUInt32(uint value) { WriteUnmanaged(value); }
+    public void WriteInt64(long value) { WriteUnmanaged(value); }
+    public void WriteUInt64(ulong value) { WriteUnmanaged(value); }
 }
