@@ -3,19 +3,19 @@ namespace Binary_Stream;
 /// <summary>
 /// A class that can temporarily go to a position in a stream
 /// </summary>
-public class Seek<T>: IDisposable where T: Stream {
+public class Seek<T> : IDisposable where T : Stream {
     protected T Stream;
-    protected long Position;
+    protected long OriginalPosition;
 
-    public Seek(T stream, long toseek, SeekOrigin way = SeekOrigin.Begin) {
+    public Seek(T stream, long offset, SeekOrigin origin = SeekOrigin.Begin) {
         Stream = stream;
-        Position = Stream.Position;
-        Stream.Seek(toseek, way);
+        OriginalPosition = Stream.Position;
+        Stream.Seek(offset, origin);
     }
 
     public void Dispose() {
         GC.SuppressFinalize(this);
-        Stream.Seek(Position, SeekOrigin.Begin);
+        Stream.Seek(OriginalPosition, SeekOrigin.Begin);
     }
 
     public void ExecTask(Action<T> func) {
@@ -28,20 +28,20 @@ public class Seek<T>: IDisposable where T: Stream {
 }
 
 public static class SeekExt {
-    public static void SeekTask<T>(this T stream, long toseek, Action<T> func) where T : Stream {
-        using var seek = new Seek<T>(stream, toseek);
+    public static void SeekTask<T>(this T stream, long offset, Action<T> func) where T : Stream {
+        using var seek = new Seek<T>(stream, offset);
         seek.ExecTask(func);
     }
-    public static void SeekTask<T>(this T stream, long toseek, SeekOrigin way, Action<T> func) where T : Stream {
-        using var seek = new Seek<T>(stream, toseek, way);
+    public static void SeekTask<T>(this T stream, long offset, SeekOrigin origin, Action<T> func) where T : Stream {
+        using var seek = new Seek<T>(stream, offset, origin);
         seek.ExecTask(func);
     }
-    public static Ret SeekTask<T, Ret>(this T stream, long toseek, Func<T, Ret> func) where T : Stream {
-        using var seek = new Seek<T>(stream, toseek);
+    public static Ret SeekTask<T, Ret>(this T stream, long offset, Func<T, Ret> func) where T : Stream {
+        using var seek = new Seek<T>(stream, offset);
         return seek.ExecTask(func);
     }
-    public static Ret SeekTask<T, Ret>(this T stream, long toseek, SeekOrigin way, Func<T, Ret> func) where T : Stream {
-        using var seek = new Seek<T>(stream, toseek, way);
+    public static Ret SeekTask<T, Ret>(this T stream, long offset, SeekOrigin origin, Func<T, Ret> func) where T : Stream {
+        using var seek = new Seek<T>(stream, offset, origin);
         return seek.ExecTask(func);
     }
 }
