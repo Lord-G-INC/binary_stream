@@ -158,7 +158,7 @@ public class BinaryStream : MemoryStream {
     /// Writes multiple null (0x00) terminated strings
     /// </summary>
     public BinaryStream WriteNTStrings(Encoding? enc, params string[] values) {
-        WriteString(String.Join('\x00', values), enc);
+        WriteString(string.Join('\x00', values), enc);
         WriteByte(0);
 
         return this;
@@ -179,7 +179,7 @@ public class BinaryStream : MemoryStream {
 
         byte[] buffer = new byte[count];
 
-        Read(buffer, 0, count);
+        Read(buffer);
 
         return buffer;
     }
@@ -206,6 +206,14 @@ public class BinaryStream : MemoryStream {
     /// </summary>
     public BinaryStream WriteItem<T>(T item) where T : IWrite {
         item.Write(this);
+        return this;
+    }
+
+    /// <summary>
+    /// Aligns the cursor position to the specified value
+    /// </summary>
+    public BinaryStream AlignTo(int alignment) {
+        Seek(alignment - (Position % alignment), SeekOrigin.Current);
         return this;
     }
 
