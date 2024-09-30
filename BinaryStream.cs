@@ -18,7 +18,7 @@ public class BinaryStream : MemoryStream {
     public Endian Endian { get; set; } = Native;
 
     /// <summary>
-    /// If the bytes should be reversed to get the requested endianness.
+    /// If the read bytes should be reversed to get the proper endianness.
     /// </summary>
     public bool Reverse => Endian != Native;
 
@@ -86,8 +86,7 @@ public class BinaryStream : MemoryStream {
     /// <summary>
     /// Writes multiple unmanaged values.
     /// </summary>
-    public BinaryStream WriteUnmanaged<T>(params T[] values) where T : unmanaged
-    {
+    public BinaryStream WriteUnmanaged<T>(params T[] values) where T : unmanaged {
         foreach (var value in values) {
             WriteUnmanaged(value);
         }
@@ -172,13 +171,7 @@ public class BinaryStream : MemoryStream {
             throw new ArgumentOutOfRangeException(nameof(count), "Byte count cannot be negative.");
         }
 
-        long bytesToEnd = Length - Position;
-        if (count > bytesToEnd) {
-            throw new ArgumentOutOfRangeException(nameof(count), $"Byte count overflow, attempted to read {count} bytes with only {bytesToEnd} available.");
-        }
-
         byte[] buffer = new byte[count];
-
         Read(buffer);
 
         return buffer;
@@ -225,6 +218,7 @@ public class BinaryStream : MemoryStream {
         return this;
     }
 
+    public bool ReadBool() { return ReadUnmanaged<bool>(); }
     public sbyte ReadInt8() { return ReadUnmanaged<sbyte>(); }
     public byte ReadUInt8() { return ReadUnmanaged<byte>(); }
     public short ReadInt16() { return ReadUnmanaged<short>(); }
@@ -233,7 +227,10 @@ public class BinaryStream : MemoryStream {
     public uint ReadUInt32() { return ReadUnmanaged<uint>(); }
     public long ReadInt64() { return ReadUnmanaged<long>(); }
     public ulong ReadUInt64() { return ReadUnmanaged<ulong>(); }
+    public float ReadSingle() { return ReadUnmanaged<float>(); }
+    public double ReadDouble() { return ReadUnmanaged<double>(); }
 
+    public void WriteBool(bool value) { WriteUnmanaged(value); }
     public void WriteInt8(sbyte value) { WriteUnmanaged(value); }
     public void WriteUInt8(byte value) { WriteUnmanaged(value); }
     public void WriteInt16(short value) { WriteUnmanaged(value); }
@@ -242,4 +239,6 @@ public class BinaryStream : MemoryStream {
     public void WriteUInt32(uint value) { WriteUnmanaged(value); }
     public void WriteInt64(long value) { WriteUnmanaged(value); }
     public void WriteUInt64(ulong value) { WriteUnmanaged(value); }
+    public void WriteSingle(float value) { WriteUnmanaged(value); }
+    public void WriteDouble(double value) { WriteUnmanaged(value); }
 }
