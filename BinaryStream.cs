@@ -27,16 +27,46 @@ public class BinaryStream : MemoryStream {
     /// </summary>
     public Encoding Encoding { get; set; } = Encoding.UTF8;
 
-    public BinaryStream() : base() {}
+    /// <summary>
+    /// Creates a <see cref="BinaryStream"/>.
+    /// </summary>
+    public BinaryStream() : base()  {}
 
-    public BinaryStream(int capacity) : base(capacity) {}
-
-    public BinaryStream(ReadOnlySpan<byte> bytes) : this(bytes.Length) {
-        Write(bytes);
-        Position = 0;
+    /// <summary>
+    /// Creates a <see cref="BinaryStream"/> with the specified endianness.
+    /// </summary>
+    /// <param name="endian">The endianness of this stream, will default to the <see cref="Native"/> endianness.</param>
+    public BinaryStream(Endian endian) : base() {
+        Endian = endian;
     }
 
-    public BinaryStream(Stream sourceStream) : this((int)sourceStream.Length) {
+    /// <summary>
+    /// Creates a <see cref="BinaryStream"/> with the specified capacity.
+    /// </summary>
+    /// <param name="capacity">The capacity of this stream.</param>
+    /// <param name="endian">The endianness of this stream, will default to the <see cref="Native"/> endianness.</param>
+    public BinaryStream(int capacity, Endian? endian = null) : base(capacity) {
+        Endian = endian ?? Native;
+    }
+
+    /// <summary>
+    /// Creates a <see cref="BinaryStream"/> from a <see cref="ReadOnlySpan{byte}"/> of bytes.
+    /// </summary>
+    /// <param name="bytes">The bytes to copy to this stream.</param>
+    /// <param name="endian">The endianness of this stream, will default to the <see cref="Native"/> endianness.</param>
+    public BinaryStream(ReadOnlySpan<byte> bytes, Endian? endian = null) : this(bytes.Length) {
+        Write(bytes);
+        Position = 0;
+
+        Endian = endian ?? Native;
+    }
+
+    /// <summary>
+    /// Creates a <see cref="BinaryStream"/> from an existing stream.
+    /// </summary>
+    /// <param name="sourceStream">The stream to copy the data from.</param>
+    /// <param name="endian">The endianness of this stream, will default to the <see cref="Native"/> endianness.</param>
+    public BinaryStream(Stream sourceStream, Endian? endian = null) : this((int)sourceStream.Length) {
         long oldpos = sourceStream.Position;
 
         sourceStream.Position = 0;
@@ -44,11 +74,18 @@ public class BinaryStream : MemoryStream {
         sourceStream.Position = oldpos;
 
         Position = 0;
+
+        Endian = endian ?? Native;
     }
 
+    #region // ----- Unmanaged Reading/Writing ----- //
+
     /// <summary>
-    /// Reads an unmanaged type.
+    /// Reads an unmanaged type from this stream.
     /// </summary>
+    /// <remarks>
+    /// Due to the nature of unmanaged reading works, structs might be read incorrectly.
+    /// </remarks>
     public T ReadUnmanaged<T>() where T : unmanaged {
         Span<byte> bytes = new byte[Unsafe.SizeOf<T>()];
 
@@ -61,16 +98,24 @@ public class BinaryStream : MemoryStream {
     }
 
     /// <summary>
-    /// Reads an unmanaged type into a variable.
+    /// Reads an unmanaged type and sets the value into a variable.
     /// </summary>
+    /// <remarks>
+    /// Due to the nature of unmanaged reading works, structs might be read incorrectly.
+    /// </remarks>
+    /// <param name="value">The variable to set the value to.</param>
     public BinaryStream ReadUnmanaged<T>(ref T value) where T : unmanaged {
         value = ReadUnmanaged<T>();
         return this;
     }
 
     /// <summary>
-    /// Writes an unmanaged type.
+    /// Writes an unmanaged type to this stream.
     /// </summary>
+    /// <remarks>
+    /// Due to the nature of unmanaged writing works, structs might be writen incorrectly.
+    /// </remarks>
+    /// <param name="value">The value to be written.</param>
     public BinaryStream WriteUnmanaged<T>(T value) where T : unmanaged {
         Span<byte> bytes = new byte[Unsafe.SizeOf<T>()];
         Unsafe.WriteUnaligned(ref bytes[0], value);
@@ -78,14 +123,15 @@ public class BinaryStream : MemoryStream {
         if (Reverse && bytes.Length > 1) {
             bytes.Reverse();
         }
-            
+
         Write(bytes);
         return this;
     }
 
     /// <summary>
-    /// Writes multiple unmanaged values.
+    /// Writes multiple unmanaged values to this stream.
     /// </summary>
+    /// <param name="values">The values to be written.</param>
     public BinaryStream WriteUnmanaged<T>(params T[] values) where T : unmanaged {
         foreach (var value in values) {
             WriteUnmanaged(value);
@@ -93,6 +139,23 @@ public class BinaryStream : MemoryStream {
 
         return this;
     }
+
+    /// <summary>
+    /// Reads a number of bytes from the current position.
+    /// </summary>
+    public byte[] ReadBytes(int count) {
+        if (count < 0) {
+            throw new ArgumentOutOfRangeException(nameof(count), "Byte count cannot be negative.");
+        }
+
+        byte[] buffer = new byte[count];
+        Read(buffer);
+
+        return buffer;
+    }
+
+    #endregion
+    #region // ----- String Reading/Writing ----- //
 
     /// <summary>
     /// Reads a string with the specified length and encoding.
@@ -163,19 +226,8 @@ public class BinaryStream : MemoryStream {
         return this;
     }
 
-    /// <summary>
-    /// Reads a number of bytes from the current position.
-    /// </summary>
-    public byte[] ReadBytes(int count) {
-        if (count < 0) {
-            throw new ArgumentOutOfRangeException(nameof(count), "Byte count cannot be negative.");
-        }
-
-        byte[] buffer = new byte[count];
-        Read(buffer);
-
-        return buffer;
-    }
+    #endregion
+    #region // ----- Items Reading/Writing ----- //
 
     /// <summary>
     /// Reads a type that implements <see cref="IRead"/>.
@@ -202,13 +254,11 @@ public class BinaryStream : MemoryStream {
         return this;
     }
 
-    /// <summary>
-    /// Aligns the cursor position to the specified value.
-    /// </summary>
-    public BinaryStream AlignTo(int alignment) {
-        Seek(alignment - (Position % alignment), SeekOrigin.Current);
-        return this;
-    }
+    #endregion
+    #region // ----- Positioning ----- //
+
+    public Seek<BinaryStream> TemporarySeek(long offset, SeekOrigin origin = SeekOrigin.Begin)
+        => new(this, offset, origin);
 
     /// <summary>
     /// Skips a number of bytes from the current position.
@@ -217,6 +267,17 @@ public class BinaryStream : MemoryStream {
         Seek(count, SeekOrigin.Current);
         return this;
     }
+
+    /// <summary>
+    /// Aligns the cursor position to the specified value.
+    /// </summary>
+    public BinaryStream AlignTo(int alignment) {
+        Seek(alignment - (Position % alignment), SeekOrigin.Current);
+        return this;
+    }
+
+    #endregion
+    #region // ----- Reading/Writing Utilities ----- //
 
     public bool ReadBool() { return ReadUnmanaged<bool>(); }
     public sbyte ReadInt8() { return ReadUnmanaged<sbyte>(); }
@@ -241,4 +302,6 @@ public class BinaryStream : MemoryStream {
     public void WriteUInt64(ulong value) { WriteUnmanaged(value); }
     public void WriteSingle(float value) { WriteUnmanaged(value); }
     public void WriteDouble(double value) { WriteUnmanaged(value); }
+
+    #endregion
 }
