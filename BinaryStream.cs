@@ -30,7 +30,7 @@ public class BinaryStream : MemoryStream {
     /// <summary>
     /// Creates a <see cref="BinaryStream"/>.
     /// </summary>
-    public BinaryStream() : base()  {}
+    public BinaryStream() : base() { }
 
     /// <summary>
     /// Creates a <see cref="BinaryStream"/> with the specified endianness.
@@ -269,12 +269,26 @@ public class BinaryStream : MemoryStream {
     }
 
     /// <summary>
-    /// Aligns the cursor position to the specified value.
+    /// Aligns the stream position to the specified <paramref name="alignment"/>.
     /// </summary>
     public BinaryStream AlignTo(int alignment) {
         Seek(alignment - (Position % alignment), SeekOrigin.Current);
         return this;
     }
+
+    /// <summary>
+    /// Writes <paramref name="value"/> until the stream position is aligned to <paramref name="alignment"/>.
+    /// </summary>
+    public BinaryStream WriteUntilAligned(int alignment, byte value) {
+        var writeCount = alignment - (Position % alignment);
+
+        for (long i = 0; i < writeCount; i++) {
+            WriteByte(value);
+        }
+
+        return this;
+    }
+
 
     #endregion
     #region // ----- Reading/Writing Utilities ----- //
