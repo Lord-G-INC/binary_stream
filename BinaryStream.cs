@@ -112,9 +112,6 @@ public class BinaryStream : MemoryStream {
     /// <summary>
     /// Writes an unmanaged type to this stream.
     /// </summary>
-    /// <remarks>
-    /// Due to the nature of unmanaged writing works, structs might be writen incorrectly.
-    /// </remarks>
     /// <param name="value">The value to be written.</param>
     public BinaryStream WriteUnmanaged<T>(T value) where T : unmanaged {
         Span<byte> bytes = new byte[Unsafe.SizeOf<T>()];
@@ -154,6 +151,22 @@ public class BinaryStream : MemoryStream {
         return buffer;
     }
 
+    /// <summary>
+    /// Writes an array of bytes from the current position.
+    /// </summary>
+    public BinaryStream WriteBytes(byte[] bytes) {
+        Write(bytes);
+        return this;
+    }
+
+    // I cannot come up with a summary for this lmao
+    public BinaryStream CreateSubStream(long size) {
+        Span<byte> bytes = new byte[size];
+        Read(bytes);
+
+        return new BinaryStream(bytes, Endian) { Encoding = Encoding };
+    }
+
     #endregion
     #region // ----- String Reading/Writing ----- //
 
@@ -172,9 +185,9 @@ public class BinaryStream : MemoryStream {
     /// Reads a null-terminated string.
     /// </summary>
     public string ReadNTString(Encoding? enc = null, byte capacity = 127) {
-        List<byte> bytes = new(capacity);
+        var bytes = new List<byte>(capacity);
 
-        for (byte b = (byte)ReadByte(); b != 0x00; b = (byte)ReadByte()) {
+        for (var b = ReadUInt8(); b != 0; b = ReadUInt8()) {
             bytes.Add(b);
         }
 
@@ -211,8 +224,7 @@ public class BinaryStream : MemoryStream {
     /// Writes a null-terminated string with a specific encoding.
     /// </summary>
     public BinaryStream WriteNTString(string value, Encoding? enc = null) {
-        WriteString(value, enc);
-        WriteByte(0);
+        WriteString(value + '\0', enc);
         return this;
     }
 
@@ -220,9 +232,7 @@ public class BinaryStream : MemoryStream {
     /// Writes multiple null-terminated strings with a specific encoding.
     /// </summary>
     public BinaryStream WriteNTStrings(Encoding? enc, params string[] values) {
-        WriteString(string.Join('\x00', values), enc);
-        WriteByte(0);
-
+        WriteString(string.Join('\0', values) + '\0', enc);
         return this;
     }
 
@@ -293,29 +303,29 @@ public class BinaryStream : MemoryStream {
     #endregion
     #region // ----- Reading/Writing Utilities ----- //
 
-    public bool ReadBool() { return ReadUnmanaged<bool>(); }
-    public sbyte ReadInt8() { return ReadUnmanaged<sbyte>(); }
-    public byte ReadUInt8() { return ReadUnmanaged<byte>(); }
-    public short ReadInt16() { return ReadUnmanaged<short>(); }
-    public ushort ReadUInt16() { return ReadUnmanaged<ushort>(); }
-    public int ReadInt32() { return ReadUnmanaged<int>(); }
-    public uint ReadUInt32() { return ReadUnmanaged<uint>(); }
-    public long ReadInt64() { return ReadUnmanaged<long>(); }
-    public ulong ReadUInt64() { return ReadUnmanaged<ulong>(); }
-    public float ReadSingle() { return ReadUnmanaged<float>(); }
-    public double ReadDouble() { return ReadUnmanaged<double>(); }
+    public bool ReadBool() => ReadByte() != 0;
+    public sbyte ReadInt8() => (sbyte)ReadByte();
+    public byte ReadUInt8() => (byte)ReadByte();
+    public short ReadInt16() => ReadUnmanaged<short>();
+    public ushort ReadUInt16() => ReadUnmanaged<ushort>();
+    public int ReadInt32() => ReadUnmanaged<int>();
+    public uint ReadUInt32() => ReadUnmanaged<uint>();
+    public long ReadInt64() => ReadUnmanaged<long>();
+    public ulong ReadUInt64() => ReadUnmanaged<ulong>();
+    public float ReadSingle() => ReadUnmanaged<float>();
+    public double ReadDouble() => ReadUnmanaged<double>();
 
-    public void WriteBool(bool value) { WriteUnmanaged(value); }
-    public void WriteInt8(sbyte value) { WriteUnmanaged(value); }
-    public void WriteUInt8(byte value) { WriteUnmanaged(value); }
-    public void WriteInt16(short value) { WriteUnmanaged(value); }
-    public void WriteUInt16(ushort value) { WriteUnmanaged(value); }
-    public void WriteInt32(int value) { WriteUnmanaged(value); }
-    public void WriteUInt32(uint value) { WriteUnmanaged(value); }
-    public void WriteInt64(long value) { WriteUnmanaged(value); }
-    public void WriteUInt64(ulong value) { WriteUnmanaged(value); }
-    public void WriteSingle(float value) { WriteUnmanaged(value); }
-    public void WriteDouble(double value) { WriteUnmanaged(value); }
+    public void WriteBool(bool value) => WriteByte(value ? (byte)1 : (byte)0);
+    public void WriteInt8(sbyte value) => WriteUnmanaged(value);
+    public void WriteUInt8(byte value) => WriteByte(value);
+    public void WriteInt16(short value) => WriteUnmanaged(value);
+    public void WriteUInt16(ushort value) => WriteUnmanaged(value);
+    public void WriteInt32(int value) => WriteUnmanaged(value);
+    public void WriteUInt32(uint value) => WriteUnmanaged(value);
+    public void WriteInt64(long value) => WriteUnmanaged(value);
+    public void WriteUInt64(ulong value) => WriteUnmanaged(value);
+    public void WriteSingle(float value) => WriteUnmanaged(value);
+    public void WriteDouble(double value) => WriteUnmanaged(value);
 
     #endregion
 }
