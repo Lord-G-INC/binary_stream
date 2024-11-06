@@ -193,7 +193,7 @@ public class BinaryStream : MemoryStream {
 
         enc ??= Encoding;
 
-        return enc.GetString(bytes.ToArray());
+        return enc.GetString([.. bytes]);
     }
 
     /// <summary>
