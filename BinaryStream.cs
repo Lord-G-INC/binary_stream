@@ -7,25 +7,34 @@ namespace Binary_Stream;
 /// A stream of data with support for endianness, seeking, aligning and better string reading/writing.
 /// </summary>
 public class BinaryStream : MemoryStream {
+    private Endian mEndian = Native;
+    private Encoding mEncoding = Encoding.UTF8;
+
     /// <summary>
     /// The native endianness of your computer architecture.
     /// </summary>
     public readonly static Endian Native = BitConverter.IsLittleEndian ? Endian.Little : Endian.Big;
 
     /// <summary>
-    /// The endianness of this stream.
-    /// </summary>
-    public Endian Endian { get; set; } = Native;
-
-    /// <summary>
     /// If the read bytes should be reversed to get the proper endianness.
     /// </summary>
-    public bool Reverse => Endian != Native;
+    public bool Reverse => mEndian != Native;
+
+    /// <summary>
+    /// The endianness of this stream.
+    /// </summary>
+    public Endian? Endianness {
+        get => mEndian;
+        set => mEndian = value ?? Native;
+    }
 
     /// <summary>
     /// The default encoding for strings parsed from this stream.
     /// </summary>
-    public Encoding Encoding { get; set; } = Encoding.UTF8;
+    public Encoding? Encoding {
+        get => mEncoding;
+        set => mEncoding = value ?? Encoding.UTF8;
+    }
 
     /// <summary>
     /// Creates a <see cref="BinaryStream"/>.
@@ -36,8 +45,10 @@ public class BinaryStream : MemoryStream {
     /// Creates a <see cref="BinaryStream"/> with the specified endianness.
     /// </summary>
     /// <param name="endian">The endianness of this stream, will default to the <see cref="Native"/> endianness.</param>
-    public BinaryStream(Endian endian) : base() {
-        Endian = endian;
+    /// <param name="encoding">The encoding of this stream, will default to the <see cref="Encoding.UTF8"/> encoding.</param>
+    public BinaryStream(Endian? endian, Encoding? encoding = null) : base() {
+        Endianness = endian;
+        Encoding = encoding;
     }
 
     /// <summary>
@@ -45,8 +56,10 @@ public class BinaryStream : MemoryStream {
     /// </summary>
     /// <param name="capacity">The capacity of this stream.</param>
     /// <param name="endian">The endianness of this stream, will default to the <see cref="Native"/> endianness.</param>
-    public BinaryStream(int capacity, Endian? endian = null) : base(capacity) {
-        Endian = endian ?? Native;
+    /// <param name="encoding">The encoding of this stream, will default to the <see cref="Encoding.UTF8"/> encoding.</param>
+    public BinaryStream(int capacity, Endian? endian = null, Encoding? encoding = null) : base(capacity) {
+        Endianness = endian;
+        Encoding = encoding;
     }
 
     /// <summary>
@@ -54,11 +67,12 @@ public class BinaryStream : MemoryStream {
     /// </summary>
     /// <param name="bytes">The bytes to copy to this stream.</param>
     /// <param name="endian">The endianness of this stream, will default to the <see cref="Native"/> endianness.</param>
-    public BinaryStream(ReadOnlySpan<byte> bytes, Endian? endian = null) : this(bytes.Length) {
+    /// <param name="encoding">The encoding of this stream, will default to the <see cref="Encoding.UTF8"/> encoding.</param>
+    public BinaryStream(ReadOnlySpan<byte> bytes, Endian? endian = null, Encoding? encoding = null) : base(bytes.Length) {
         Write(bytes);
         Position = 0;
-
-        Endian = endian ?? Native;
+        Endianness = endian;
+        Encoding = encoding;
     }
 
     /// <summary>
@@ -66,7 +80,8 @@ public class BinaryStream : MemoryStream {
     /// </summary>
     /// <param name="sourceStream">The stream to copy the data from.</param>
     /// <param name="endian">The endianness of this stream, will default to the <see cref="Native"/> endianness.</param>
-    public BinaryStream(Stream sourceStream, Endian? endian = null) : this((int)sourceStream.Length) {
+    /// <param name="encoding">The encoding of this stream, will default to the <see cref="Encoding.UTF8"/> encoding.</param>
+    public BinaryStream(Stream sourceStream, Endian? endian = null, Encoding? encoding = null) : base((int)sourceStream.Length) {
         long oldpos = sourceStream.Position;
 
         sourceStream.Position = 0;
@@ -74,8 +89,8 @@ public class BinaryStream : MemoryStream {
         sourceStream.Position = oldpos;
 
         Position = 0;
-
-        Endian = endian ?? Native;
+        Endianness = endian;
+        Encoding = encoding;
     }
 
     #region // ----- Unmanaged Reading/Writing ----- //
@@ -83,18 +98,17 @@ public class BinaryStream : MemoryStream {
     /// <summary>
     /// Reads an unmanaged type from this stream.
     /// </summary>
-    /// <remarks>
-    /// Due to the nature of unmanaged reading works, structs might be read incorrectly.
-    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T ReadUnmanaged<T>() where T : unmanaged {
-        Span<byte> bytes = new byte[Unsafe.SizeOf<T>()];
+        T result = new();
+        var span = Util.SpanFromRef(ref result);
+        ReadExactly(span);
 
-        Read(bytes);
-        if (Reverse && bytes.Length > 1) {
-            bytes.Reverse();
+        if (Reverse) {
+            span.Reverse();
         }
 
-        return Unsafe.ReadUnaligned<T>(ref bytes[0]);
+        return result;
     }
 
     /// <summary>
@@ -113,11 +127,11 @@ public class BinaryStream : MemoryStream {
     /// Writes an unmanaged type to this stream.
     /// </summary>
     /// <param name="value">The value to be written.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public BinaryStream WriteUnmanaged<T>(T value) where T : unmanaged {
-        Span<byte> bytes = new byte[Unsafe.SizeOf<T>()];
-        Unsafe.WriteUnaligned(ref bytes[0], value);
+        var bytes = Util.SpanFromRef(ref value);
 
-        if (Reverse && bytes.Length > 1) {
+        if (Reverse) {
             bytes.Reverse();
         }
 
@@ -141,9 +155,7 @@ public class BinaryStream : MemoryStream {
     /// Reads a number of bytes from the current position.
     /// </summary>
     public byte[] ReadBytes(int count) {
-        if (count < 0) {
-            throw new ArgumentOutOfRangeException(nameof(count), "Byte count cannot be negative.");
-        }
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count, nameof(count));
 
         byte[] buffer = new byte[count];
         Read(buffer);
@@ -151,20 +163,11 @@ public class BinaryStream : MemoryStream {
         return buffer;
     }
 
-    /// <summary>
-    /// Writes an array of bytes from the current position.
-    /// </summary>
-    public BinaryStream WriteBytes(byte[] bytes) {
-        Write(bytes);
-        return this;
-    }
-
-    // I cannot come up with a summary for this lmao
     public BinaryStream CreateSubStream(long size) {
         Span<byte> bytes = new byte[size];
         Read(bytes);
 
-        return new BinaryStream(bytes, Endian) { Encoding = Encoding };
+        return new BinaryStream(bytes, mEndian) { Encoding = Encoding };
     }
 
     #endregion
