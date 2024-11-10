@@ -7,8 +7,6 @@ namespace Binary_Stream;
 /// A stream of data with support for endianness, seeking, aligning and better string reading/writing.
 /// </summary>
 public class BinaryStream : MemoryStream {
-    private Endian mEndian = Native;
-    private Encoding mEncoding = Encoding.UTF8;
 
     /// <summary>
     /// The native endianness of your computer architecture.
@@ -18,23 +16,17 @@ public class BinaryStream : MemoryStream {
     /// <summary>
     /// If the read bytes should be reversed to get the proper endianness.
     /// </summary>
-    public bool Reverse => mEndian != Native;
+    public bool Reverse => Endian != Native;
 
     /// <summary>
-    /// The endianness of this stream.
+    /// The endianness of this stream. Set to <seealso cref="Native"/> by default.
     /// </summary>
-    public Endian? Endianness {
-        get => mEndian;
-        set => mEndian = value ?? Native;
-    }
+    public Endian Endian { get; set; } = Native;
 
     /// <summary>
-    /// The default encoding for strings parsed from this stream.
+    /// The default encoding for strings parsed from this stream. Set to <seealso cref="Encoding.UTF8"/> by default.
     /// </summary>
-    public Encoding? Encoding {
-        get => mEncoding;
-        set => mEncoding = value ?? Encoding.UTF8;
-    }
+    public Encoding Encoding { get; set; } = Encoding.UTF8;
 
     /// <summary>
     /// Creates a <see cref="BinaryStream"/>.
@@ -47,8 +39,8 @@ public class BinaryStream : MemoryStream {
     /// <param name="endian">The endianness of this stream, will default to the <see cref="Native"/> endianness.</param>
     /// <param name="encoding">The encoding of this stream, will default to the <see cref="Encoding.UTF8"/> encoding.</param>
     public BinaryStream(Endian? endian, Encoding? encoding = null) : base() {
-        Endianness = endian;
-        Encoding = encoding;
+        Endian = endian ?? Native;
+        Encoding = encoding ?? Encoding;
     }
 
     /// <summary>
@@ -58,8 +50,8 @@ public class BinaryStream : MemoryStream {
     /// <param name="endian">The endianness of this stream, will default to the <see cref="Native"/> endianness.</param>
     /// <param name="encoding">The encoding of this stream, will default to the <see cref="Encoding.UTF8"/> encoding.</param>
     public BinaryStream(int capacity, Endian? endian = null, Encoding? encoding = null) : base(capacity) {
-        Endianness = endian;
-        Encoding = encoding;
+        Endian = endian ?? Native;
+        Encoding = encoding ?? Encoding;
     }
 
     /// <summary>
@@ -71,8 +63,8 @@ public class BinaryStream : MemoryStream {
     public BinaryStream(ReadOnlySpan<byte> bytes, Endian? endian = null, Encoding? encoding = null) : base(bytes.Length) {
         Write(bytes);
         Position = 0;
-        Endianness = endian;
-        Encoding = encoding;
+        Endian = endian ?? Native;
+        Encoding = encoding ?? Encoding;
     }
 
     /// <summary>
@@ -89,8 +81,8 @@ public class BinaryStream : MemoryStream {
         sourceStream.Position = oldpos;
 
         Position = 0;
-        Endianness = endian;
-        Encoding = encoding;
+        Endian = endian ?? Native;
+        Encoding = encoding ?? Encoding;
     }
 
     #region // ----- Unmanaged Reading/Writing ----- //
@@ -167,7 +159,32 @@ public class BinaryStream : MemoryStream {
         Span<byte> bytes = new byte[size];
         Read(bytes);
 
-        return new BinaryStream(bytes, mEndian) { Encoding = Encoding };
+        return new BinaryStream(bytes, Endian) { Encoding = Encoding };
+    }
+
+    public bool TryRead<T>(out T output) where T : IRead, new()
+    {
+        output = new();
+        try
+        {
+            output.Read(this);
+            return true;
+        } catch
+        {
+            return false;
+        }
+    }
+
+    public bool TryWrite<T>(T item) where T : IWrite
+    {
+        try
+        {
+            item.Write(this);
+            return true;
+        } catch
+        {
+            return false;
+        }
     }
 
     #endregion
@@ -243,7 +260,7 @@ public class BinaryStream : MemoryStream {
     #region // ----- Items Reading/Writing ----- //
 
     /// <summary>
-    /// Reads a type that implements <see cref="IRead"/>.
+    /// Reads a type that implements <see cref="IRead"/>. Type must have a default ctor.
     /// </summary>
     public T ReadItem<T>() where T : IRead, new() {
         T res = new();
