@@ -1,12 +1,14 @@
 using System.Text;
 using System.Runtime.CompilerServices;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Binary_Stream;
 
 /// <summary>
 /// A stream of data with support for endianness, seeking, aligning and better string reading/writing.
 /// </summary>
-public class BinaryStream : MemoryStream {
+public class BinaryStream : MemoryStream
+{
 
     /// <summary>
     /// The native endianness of your computer architecture.
@@ -38,7 +40,8 @@ public class BinaryStream : MemoryStream {
     /// </summary>
     /// <param name="endian">The endianness of this stream, will default to the <see cref="Native"/> endianness.</param>
     /// <param name="encoding">The encoding of this stream, will default to the <see cref="Encoding.UTF8"/> encoding.</param>
-    public BinaryStream(Endian? endian, Encoding? encoding = null) : base() {
+    public BinaryStream(Endian? endian, Encoding? encoding = null) : base()
+    {
         Endian = endian ?? Native;
         Encoding = encoding ?? Encoding;
     }
@@ -49,7 +52,8 @@ public class BinaryStream : MemoryStream {
     /// <param name="capacity">The capacity of this stream.</param>
     /// <param name="endian">The endianness of this stream, will default to the <see cref="Native"/> endianness.</param>
     /// <param name="encoding">The encoding of this stream, will default to the <see cref="Encoding.UTF8"/> encoding.</param>
-    public BinaryStream(int capacity, Endian? endian = null, Encoding? encoding = null) : base(capacity) {
+    public BinaryStream(int capacity, Endian? endian = null, Encoding? encoding = null) : base(capacity)
+    {
         Endian = endian ?? Native;
         Encoding = encoding ?? Encoding;
     }
@@ -60,7 +64,8 @@ public class BinaryStream : MemoryStream {
     /// <param name="bytes">The bytes to copy to this stream.</param>
     /// <param name="endian">The endianness of this stream, will default to the <see cref="Native"/> endianness.</param>
     /// <param name="encoding">The encoding of this stream, will default to the <see cref="Encoding.UTF8"/> encoding.</param>
-    public BinaryStream(ReadOnlySpan<byte> bytes, Endian? endian = null, Encoding? encoding = null) : base(bytes.Length) {
+    public BinaryStream(ReadOnlySpan<byte> bytes, Endian? endian = null, Encoding? encoding = null) : base(bytes.Length)
+    {
         Write(bytes);
         Position = 0;
         Endian = endian ?? Native;
@@ -73,7 +78,8 @@ public class BinaryStream : MemoryStream {
     /// <param name="sourceStream">The stream to copy the data from.</param>
     /// <param name="endian">The endianness of this stream, will default to the <see cref="Native"/> endianness.</param>
     /// <param name="encoding">The encoding of this stream, will default to the <see cref="Encoding.UTF8"/> encoding.</param>
-    public BinaryStream(Stream sourceStream, Endian? endian = null, Encoding? encoding = null) : base((int)sourceStream.Length) {
+    public BinaryStream(Stream sourceStream, Endian? endian = null, Encoding? encoding = null) : base((int)sourceStream.Length)
+    {
         long oldpos = sourceStream.Position;
 
         sourceStream.Position = 0;
@@ -91,12 +97,14 @@ public class BinaryStream : MemoryStream {
     /// Reads an unmanaged type from this stream.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public T ReadUnmanaged<T>() where T : unmanaged {
+    public T ReadUnmanaged<T>() where T : unmanaged
+    {
         T result = new();
         var span = Util.SpanFromRef(ref result);
         ReadExactly(span);
 
-        if (Reverse) {
+        if (Reverse)
+        {
             span.Reverse();
         }
 
@@ -110,7 +118,8 @@ public class BinaryStream : MemoryStream {
     /// Due to the nature of unmanaged reading works, structs might be read incorrectly.
     /// </remarks>
     /// <param name="value">The variable to set the value to.</param>
-    public BinaryStream ReadUnmanaged<T>(ref T value) where T : unmanaged {
+    public BinaryStream ReadUnmanaged<T>(ref T value) where T : unmanaged
+    {
         value = ReadUnmanaged<T>();
         return this;
     }
@@ -120,10 +129,12 @@ public class BinaryStream : MemoryStream {
     /// </summary>
     /// <param name="value">The value to be written.</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public BinaryStream WriteUnmanaged<T>(T value) where T : unmanaged {
+    public BinaryStream WriteUnmanaged<T>(T value) where T : unmanaged
+    {
         var bytes = Util.SpanFromRef(ref value);
 
-        if (Reverse) {
+        if (Reverse)
+        {
             bytes.Reverse();
         }
 
@@ -135,8 +146,10 @@ public class BinaryStream : MemoryStream {
     /// Writes multiple unmanaged values to this stream.
     /// </summary>
     /// <param name="values">The values to be written.</param>
-    public BinaryStream WriteUnmanaged<T>(params T[] values) where T : unmanaged {
-        foreach (var value in values) {
+    public BinaryStream WriteUnmanaged<T>(params T[] values) where T : unmanaged
+    {
+        foreach (var value in values)
+        {
             WriteUnmanaged(value);
         }
 
@@ -146,7 +159,8 @@ public class BinaryStream : MemoryStream {
     /// <summary>
     /// Reads a number of bytes from the current position.
     /// </summary>
-    public byte[] ReadBytes(int count) {
+    public byte[] ReadBytes(int count)
+    {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count, nameof(count));
 
         byte[] buffer = new byte[count];
@@ -155,7 +169,8 @@ public class BinaryStream : MemoryStream {
         return buffer;
     }
 
-    public BinaryStream CreateSubStream(long size) {
+    public BinaryStream CreateSubStream(long size)
+    {
         Span<byte> bytes = new byte[size];
         Read(bytes);
 
@@ -169,7 +184,8 @@ public class BinaryStream : MemoryStream {
         {
             output.Read(this);
             return true;
-        } catch
+        }
+        catch
         {
             return false;
         }
@@ -181,7 +197,8 @@ public class BinaryStream : MemoryStream {
         {
             item.Write(this);
             return true;
-        } catch
+        }
+        catch
         {
             return false;
         }
@@ -193,7 +210,8 @@ public class BinaryStream : MemoryStream {
     /// <summary>
     /// Reads a string with the specified length and encoding.
     /// </summary>
-    public string ReadString(int length, Encoding? enc = null) {
+    public string ReadString(int length, Encoding? enc = null)
+    {
         byte[] data = new byte[length];
         Read(data);
 
@@ -204,10 +222,12 @@ public class BinaryStream : MemoryStream {
     /// <summary>
     /// Reads a null-terminated string.
     /// </summary>
-    public string ReadNTString(Encoding? enc = null, byte capacity = 127) {
+    public string ReadNTString(Encoding? enc = null, byte capacity = 127)
+    {
         var bytes = new List<byte>(capacity);
 
-        for (var b = ReadUInt8(); b != 0; b = ReadUInt8()) {
+        for (var b = ReadUInt8(); b != 0; b = ReadUInt8())
+        {
             bytes.Add(b);
         }
 
@@ -219,21 +239,24 @@ public class BinaryStream : MemoryStream {
     /// <summary>
     /// Reads a null-terminated string at a specific position.
     /// </summary>
-    public string ReadNTStringAt(long offset, Encoding? enc = null) {
+    public string ReadNTStringAt(long offset, Encoding? enc = null)
+    {
         return this.SeekTask(offset, x => x.ReadNTString(enc));
     }
 
     /// <summary>
     /// Reads a null-terminated string at a specific position.
     /// </summary>
-    public string ReadNTStringAt(long offset, SeekOrigin origin, Encoding? enc = null) {
+    public string ReadNTStringAt(long offset, SeekOrigin origin, Encoding? enc = null)
+    {
         return this.SeekTask(offset, origin, x => x.ReadNTString(enc));
     }
 
     /// <summary>
     /// Writes a string to the file with a specific encoding.
     /// </summary>
-    public BinaryStream WriteString(string value, Encoding? enc = null) {
+    public BinaryStream WriteString(string value, Encoding? enc = null)
+    {
         enc ??= Encoding;
         Write(enc.GetBytes(value));
 
@@ -243,7 +266,8 @@ public class BinaryStream : MemoryStream {
     /// <summary>
     /// Writes a null-terminated string with a specific encoding.
     /// </summary>
-    public BinaryStream WriteNTString(string value, Encoding? enc = null) {
+    public BinaryStream WriteNTString(string value, Encoding? enc = null)
+    {
         WriteString(value + '\0', enc);
         return this;
     }
@@ -251,7 +275,8 @@ public class BinaryStream : MemoryStream {
     /// <summary>
     /// Writes multiple null-terminated strings with a specific encoding.
     /// </summary>
-    public BinaryStream WriteNTStrings(Encoding? enc, params string[] values) {
+    public BinaryStream WriteNTStrings(Encoding? enc, params string[] values)
+    {
         WriteString(string.Join('\0', values) + '\0', enc);
         return this;
     }
@@ -262,7 +287,8 @@ public class BinaryStream : MemoryStream {
     /// <summary>
     /// Reads a type that implements <see cref="IRead"/>. Type must have a default ctor.
     /// </summary>
-    public T ReadItem<T>() where T : IRead, new() {
+    public T ReadItem<T>() where T : IRead, new()
+    {
         T res = new();
         res.Read(this);
         return res;
@@ -271,7 +297,8 @@ public class BinaryStream : MemoryStream {
     /// <summary>
     /// Reads a type that implements <see cref="IRead"/> into a variable.
     /// </summary>
-    public BinaryStream ReadItem<T>(ref T item) where T : IRead {
+    public BinaryStream ReadItem<T>(ref T item) where T : IRead
+    {
         item.Read(this);
         return this;
     }
@@ -279,7 +306,8 @@ public class BinaryStream : MemoryStream {
     /// <summary>
     /// Writes a variable that implements <see cref="IWrite"/>.
     /// </summary>
-    public BinaryStream WriteItem<T>(T item) where T : IWrite {
+    public BinaryStream WriteItem<T>(T item) where T : IWrite
+    {
         item.Write(this);
         return this;
     }
@@ -293,7 +321,8 @@ public class BinaryStream : MemoryStream {
     /// <summary>
     /// Skips a number of bytes from the current position.
     /// </summary>
-    public BinaryStream Skip(long count) {
+    public BinaryStream Skip(long count)
+    {
         Seek(count, SeekOrigin.Current);
         return this;
     }
@@ -301,7 +330,8 @@ public class BinaryStream : MemoryStream {
     /// <summary>
     /// Aligns the stream position to the specified <paramref name="alignment"/>.
     /// </summary>
-    public BinaryStream AlignTo(int alignment) {
+    public BinaryStream AlignTo(int alignment)
+    {
         Seek(alignment - (Position % alignment), SeekOrigin.Current);
         return this;
     }
@@ -309,10 +339,12 @@ public class BinaryStream : MemoryStream {
     /// <summary>
     /// Writes <paramref name="value"/> until the stream position is aligned to <paramref name="alignment"/>.
     /// </summary>
-    public BinaryStream WriteUntilAligned(int alignment, byte value) {
+    public BinaryStream WriteUntilAligned(int alignment, byte value)
+    {
         var writeCount = alignment - (Position % alignment);
 
-        for (long i = 0; i < writeCount; i++) {
+        for (long i = 0; i < writeCount; i++)
+        {
             WriteByte(value);
         }
 

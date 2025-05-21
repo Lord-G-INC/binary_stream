@@ -8,7 +8,7 @@ public static class Util
     /// <summary>
     /// Reads an item from an array of bytes.
     /// </summary>
-    public static T FromBytes<T>(ReadOnlySpan<byte> bytes, Endian? endian = null, Encoding? enc = null) 
+    public static T FromBytes<T>(ReadOnlySpan<byte> bytes, Endian? endian = null, Encoding? enc = null)
         where T : IRead, new()
     {
         using BinaryStream stream = new(bytes, endian, enc);
@@ -28,7 +28,8 @@ public static class Util
         return stream.ToArray();
     }
 
-    public static Span<byte> SpanFromRef<T>(scoped ref T item) where T : unmanaged {
+    public static Span<byte> SpanFromRef<T>(scoped ref T item) where T : unmanaged
+    {
         return MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref item, 1));
     }
 }
