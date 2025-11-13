@@ -2,13 +2,34 @@ using System.Text;
 
 namespace Binary_Stream;
 
+/// <summary>
+/// A interface for types that can read data from a <see cref="BinaryStream"/>.
+/// </summary>
 public interface IRead
 {
+    /// <summary>
+    /// Reads data from a <see cref="BinaryStream"/>.
+    /// </summary>
+    /// <param name="stream">The stream.</param>
     public void Read(BinaryStream stream);
 }
 
+/// <summary>
+/// A interface for types that can write data to a <see cref="BinaryStream"/>.
+/// </summary>
 public interface IWrite
 {
+    /// <summary>
+    /// Calculates the total size this type uses.
+    /// Note: Only implement this if you expect yout type may be used by
+    /// <seealso cref="Util.ToBytes{T}(T, Endian?, Encoding?)"/>.
+    /// </summary>
+    /// <returns></returns>
+    public virtual int TotalSize() => 0;
+    /// <summary>
+    /// Write the data of this type to the <see cref="BinaryStream"/>.
+    /// </summary>
+    /// <param name="stream">The stream.</param>
     public void Write(BinaryStream stream);
 }
 
