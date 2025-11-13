@@ -21,7 +21,7 @@ public interface IWrite
 {
     /// <summary>
     /// Calculates the total size this type uses.
-    /// Note: Only implement this if you expect yout type may be used by
+    /// Note: Only implement this if you expect your type may be used by
     /// <seealso cref="Util.ToBytes{T}(T, Endian?, Encoding?)"/>.
     /// </summary>
     /// <returns></returns>
