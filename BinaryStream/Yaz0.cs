@@ -142,9 +142,9 @@ public static class Yaz0 {
 			if (Offs >= length) break;
 		}
 		while ((dstoffs % 4) != 0) dstoffs++;
-		Span<byte> realresult = new byte[dstoffs];
+		byte[] realresult = new byte[dstoffs];
 		result[..dstoffs].CopyTo(realresult);
-		return realresult.ToArray();
+		return realresult;
     }
 
 	public static byte[] CompressNaive(ReadOnlySpan<byte> src, int level = 7)
