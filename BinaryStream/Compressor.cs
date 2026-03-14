@@ -6,7 +6,7 @@
 
 namespace Binary_Stream;
 
-public abstract class CompressionLevel(int level)
+public abstract class CompressionLevel(int level = 7)
 {
     protected int level = level;
 
@@ -17,9 +17,9 @@ public abstract class CompressionLevel(int level)
     public static Lookahead Lookahead(int level) => new(level);
 }
 
-public sealed class Naive(int level) : CompressionLevel(level);
+public sealed class Naive(int level = 7) : CompressionLevel(level);
 
-public sealed class Lookahead(int level) : CompressionLevel(level);
+public sealed class Lookahead(int level = 7) : CompressionLevel(level);
 
 class Run
 {

@@ -150,13 +150,13 @@ public static class Yaz0 {
 		return realresult;
     }
 
-	public static byte[] CompressNaive(ReadOnlySpan<byte> src, int level)
+	public static byte[] CompressNaive(ReadOnlySpan<byte> src, int level = 7)
 	{
 		Naive naive = new(level);
 		return Compressor.CompressLookaround(src, naive);
 	}
 
-	public static byte[] CompressLookahead(ReadOnlySpan<byte> src, int level)
+	public static byte[] CompressLookahead(ReadOnlySpan<byte> src, int level = 7)
 	{
 		Lookahead lookahead = new(level);
 		return Compressor.CompressLookaround(src, lookahead);
