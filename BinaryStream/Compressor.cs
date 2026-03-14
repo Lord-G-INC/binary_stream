@@ -103,7 +103,7 @@ static class Compressor
         }
     }
 
-    internal static byte[] CompressLookaround(ReadOnlySpan<byte> src, 
+    static byte[] CompressLookaround(ReadOnlySpan<byte> src, 
         CompressionLevel level)
     {
         var quality = level.Level;
@@ -111,7 +111,7 @@ static class Compressor
         var lookback = (int)MathF.Floor(MAXLOOKBACK / (10f / quality));
         Run? cache = null;
         var read_head = 0;
-        // Alloc at least original source's length to prevent reallocs.
+        // Alloc original source's length to prevent reallocs.
 
         using var encoded = new BinaryStream(src.Length);
         while (read_head < src.Length)
@@ -154,5 +154,18 @@ static class Compressor
         }
 
         return encoded.ToArray();
+    }
+
+    internal static byte[] Compress(ReadOnlySpan<byte> src, CompressionLevel level)
+    {
+        // Intentionally overallocate to prevent reallocation.
+
+        using BinaryStream stream = new(src.Length, Endian.Big);
+        stream.WriteString("Yaz0");
+        stream.WriteUInt32((uint)src.Length);
+        stream.Write([0, 0, 0, 0, 0, 0, 0, 0]);
+        var compressed = CompressLookaround(src, level);
+        stream.Write(compressed);
+        return stream.ToArray();
     }
 }
