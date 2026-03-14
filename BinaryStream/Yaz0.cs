@@ -49,6 +49,9 @@ public static class Yaz0 {
 
 		return output;
 	}
+	[Obsolete("This function is now a legacy method.\n" +
+		"It still works but has been replaced by newer functions.\n" +
+		"Please use CompressNaive or CompressLookahead instead.")]
     public unsafe static byte[] Compress(ReadOnlySpan<byte> data) {
         byte* dataptr = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(data));
         byte[] result = new byte[data.Length + data.Length / 8 + 0x10];
@@ -146,4 +149,16 @@ public static class Yaz0 {
 		Array.Copy(result, realresult, dstoffs);
 		return realresult;
     }
+
+	public static byte[] CompressNaive(ReadOnlySpan<byte> src, int level)
+	{
+		Naive naive = new(level);
+		return Compressor.CompressLookaround(src, naive);
+	}
+
+	public static byte[] CompressLookahead(ReadOnlySpan<byte> src, int level)
+	{
+		Lookahead lookahead = new(level);
+		return Compressor.CompressLookaround(src, lookahead);
+	}
 }
