@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 namespace Binary_Stream;
 
 public static class Yaz0 {
-    public static byte[] Decompress(ReadOnlySpan<byte> data)
+	public static byte[] Decompress(ReadOnlySpan<byte> data)
 	{
 		if (data[0] != 'Y' || data[1] != 'a' || data[2] != 'z' || data[3] != '0')
 			return [.. data];
@@ -49,13 +49,10 @@ public static class Yaz0 {
 
 		return output;
 	}
-	[Obsolete("This function is now a legacy method.\n" +
-		"It still works but has been replaced by newer functions.\n" +
-		"Please use CompressNaive or CompressLookahead instead.")]
     public unsafe static byte[] Compress(ReadOnlySpan<byte> data) {
         byte* dataptr = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(data));
-        byte[] result = new byte[data.Length + data.Length / 8 + 0x10];
-		byte* resultptr = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(result));
+        Span<byte> result = new byte[data.Length + data.Length / 8 + 0x10];
+		byte* resultptr = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(result));
 		*resultptr++ = (byte)'Y';
 		*resultptr++ = (byte)'a';
 		*resultptr++ = (byte)'z';
@@ -83,7 +80,7 @@ public static class Yaz0 {
 					int maxnum = 0x111;
 					if (length - Offs < maxnum) maxnum = length - Offs;
 					//Use a smaller amount of bytes back to decrease time
-					int maxback = 0x400;//0x1000;
+					int maxback = 0x1000;//0x1000;
 					if (Offs < maxback) maxback = Offs;
 					maxback = (int)dataptr - maxback;
 					int tmpnr;
@@ -145,9 +142,9 @@ public static class Yaz0 {
 			if (Offs >= length) break;
 		}
 		while ((dstoffs % 4) != 0) dstoffs++;
-		byte[] realresult = new byte[dstoffs];
-		Array.Copy(result, realresult, dstoffs);
-		return realresult;
+		Span<byte> realresult = new byte[dstoffs];
+		result[..dstoffs].CopyTo(realresult);
+		return realresult.ToArray();
     }
 
 	public static byte[] CompressNaive(ReadOnlySpan<byte> src, int level = 7)

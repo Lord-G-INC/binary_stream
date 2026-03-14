@@ -21,7 +21,7 @@ public sealed class Naive(int level = 7) : CompressionLevel(level);
 
 public sealed class Lookahead(int level = 7) : CompressionLevel(level);
 
-class Run
+record Run
 {
     public int Cursor;
     public int Length;
@@ -42,9 +42,9 @@ static class Compressor
     static Run FindNaiveRun(ReadOnlySpan<byte> src, int cursor,
         int lookback)
     {
-        var search_start = cursor - lookback;
+        var search_start = Math.Max(cursor - lookback, 0);
         var run = Run.Zero();
-        for (int head = search_start; head <= cursor; head++)
+        for (int head = search_start; head < cursor; head++)
         {
             var runlen = 0;
             while (runlen < src.Length - cursor)
@@ -143,7 +143,7 @@ static class Compressor
                     if (read_head >= src.Length)
                         break;
                     packets.WriteUInt8(src[read_head]);
-                    ORAssign<byte>(ref codon, (byte)(0x80 >> packet_n));
+                    ORAssign(ref codon, (byte)(0x80 >> packet_n));
                     read_head++;
                 }
                 packet_n++;
